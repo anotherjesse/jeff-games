@@ -96,7 +96,7 @@ class Board():
         screen.fill([0, 0, 0]) # blank the screen.
         screen.blit(self.bkg, [0,0])
 
-        if random.random() < 0.05:
+        if random.random() < 0.005:
             self.head = random.choice(self.heads)
 
         screen.blit(self.head, [0,0])
