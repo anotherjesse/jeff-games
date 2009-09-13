@@ -66,7 +66,10 @@ class Board():
         self.boxes.append(Shot(who,x,y))
 
     def run(self):
-        while pygame.event.poll().type != KEYDOWN:
+        while True:
+            key = pygame.event.poll()
+            if key.type == KEYDOWN and key.key == K_q:
+                break
             self.draw(screen)
             pygame.display.update()
             reactor.runUntilCurrent()
