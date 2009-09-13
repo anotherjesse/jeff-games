@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from twisted.web import server, resource
 from twisted.internet import reactor
 import pygame
