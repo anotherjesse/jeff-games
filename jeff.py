@@ -6,23 +6,32 @@ import pygame
 import random
 from pygame.locals import *
 from random import uniform
+from math import *
 
 pygame.init()
 screen = pygame.display.set_mode([640, 480], pygame.FULLSCREEN|pygame.HWSURFACE)
+
+SPEED = 0.5
+
+def mycollide(a, b):
+    if isinstance(a, Missile) and a.age < 5:
+        return False
+    if isinstance(b, Missile) and b.age < 5:
+        return False
+
+    return pygame.sprite.collide_rect(a, b)
 
 class Shot(pygame.sprite.Sprite):
     def __init__(self, who, x, y):
         self.x = x
         self.y = y
         self.who = who
-        self.age = 30
+        self.age = 60
         super(Shot, self).__init__()
 
     def render(self, screen):
-        pygame.draw.rect(screen,
-                         [0, 255, 0],
-                         [8 + self.y*64, 8 + self.x*48,
-                          48, 32])
+        self.rect = Rect(8 + self.y*64, 8 + self.x*48, 48, 32)
+        pygame.draw.rect(screen, [0, 255, 0], self.rect)
         self.age -= 1
 
     def alive(self):
@@ -119,24 +128,29 @@ class Board():
 
         self.missiles.update()
 
-        if self.frame % 50 == 0:
+        if self.frame % 100 == 0:
             side = int(uniform(0, 4))
-            if (side == 0):
+            if (side == 0): # top
                 start = (uniform(0, 640), 0)
-            elif (side == 2):
+            elif (side == 2): # bottom
                 start = (uniform(0, 640), 479)
-            elif (side == 1):
+            elif (side == 1): # right
                 start = (0, uniform(0, 480))
-            elif (side == 3):
+            elif (side == 3): # left
                 start = (639, uniform(0, 480))
 
-            self.missiles.add(Missile(first=start))
+            dx = 320 - start[0]
+            dy = 240 - start[1]
+
+            theta = atan2(dy, dx) + uniform(-1.0/2, 1.0/2)
+
+            self.missiles.add(Missile(first=start, speed = (SPEED * cos(theta), SPEED * sin(theta))))
 
         for s in self.static:
-            pygame.sprite.spritecollide(s, self.missiles, True)
+            pygame.sprite.spritecollide(s, self.missiles, True, mycollide)
 
         for b in self.boxes:
-            pygame.spride.spritecollide(b, self.missiles, True)
+            pygame.sprite.spritecollide(b, self.missiles, True, mycollide)
 
         [m.draw(screen) for m in self.missiles]
 
@@ -147,8 +161,11 @@ class Board():
     def run(self):
         while True:
             key = pygame.event.poll()
-            if key.type == KEYDOWN and key.key == K_q:
-                break
+            if key.type == KEYDOWN:
+                if key.key == K_q:
+                    break
+                elif key.key == K_f:
+                    pygame.display.toggle_fullscreen()
             self.draw(screen)
             pygame.display.update()
             reactor.runUntilCurrent()
@@ -174,5 +191,5 @@ class CommandCollector(resource.Resource):
 if __name__ == '__main__':
     board = Board()
     collector = CommandCollector(board)
-    reactor.listenTCP(8080, server.Site(collector))
+    reactor.listenTCP(8088, server.Site(collector))
     board.run()
