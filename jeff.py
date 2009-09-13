@@ -10,8 +10,10 @@ from math import *
 
 pygame.init()
 screen = pygame.display.set_mode([640, 480], pygame.FULLSCREEN|pygame.HWSURFACE)
+font   = pygame.font.SysFont(pygame.font.get_default_font(), 24)
+font2  = pygame.font.SysFont(pygame.font.get_default_font(), 30)
 
-SPEED = 0.5
+SPEED = 0.25
 
 def mycollide(a, b):
     if isinstance(a, Missile) and a.age < 5:
@@ -22,16 +24,19 @@ def mycollide(a, b):
     return pygame.sprite.collide_rect(a, b)
 
 class Shot(pygame.sprite.Sprite):
+    OVERLAP = (16,16)
+
     def __init__(self, who, x, y):
         self.x = x
         self.y = y
-        self.who = who
+        self.who = font2.render(who, False, (0,0,0))
         self.age = 60
+        self.rect = Rect(self.y*64-self.OVERLAP[0]/2, self.x*48-self.OVERLAP[1]/2, 64+self.OVERLAP[0], 48+self.OVERLAP[1])
         super(Shot, self).__init__()
 
     def render(self, screen):
-        self.rect = Rect(8 + self.y*64, 8 + self.x*48, 48, 32)
         pygame.draw.rect(screen, [0, 255, 0], self.rect)
+        screen.blit(self.who, (self.rect[0]+self.rect[2]/4, self.rect[1]+self.rect[3]/2))
         self.age -= 1
 
     def alive(self):
@@ -73,7 +78,6 @@ class Board():
         self.heads = [pygame.image.load(fn) for fn in
                       ['head1.png', 'head2.png', 'head3.png']]
         self.head = random.choice(self.heads)
-        font = pygame.font.SysFont(pygame.font.get_default_font(), 24)
         self.digits = [font.render(str(digit),
                                    True,
                                    [0,0,0],
@@ -92,39 +96,6 @@ class Board():
 
     def draw(self, screen):
         self.frame += 1
-
-        screen.fill([0, 0, 0]) # blank the screen.
-        screen.blit(self.bkg, [0,0])
-
-        if random.random() < 0.005:
-            self.head = random.choice(self.heads)
-
-        screen.blit(self.head, [0,0])
-
-        for digit in xrange(10):
-            pygame.draw.line(screen,
-                             [255,255,255],
-                             [0,48*digit],
-                             [640,48*digit])
-
-            pygame.draw.line(screen,
-                             [255,255,255],
-                             [64*digit, 0],
-                             [64*digit, 480])
-
-
-        for row in xrange(10):
-            for col in xrange(10):
-                screen.blit(self.digits[col],
-                            [1+64*row, 1+48*col])
-                screen.blit(self.digits[row],
-                            [10+64*row, 1+48*col])
-
-
-        for b in self.boxes:
-            b.render(screen)
-
-        self.boxes = [b for b in self.boxes if b.alive()]
 
         self.missiles.update()
 
@@ -146,13 +117,46 @@ class Board():
 
             self.missiles.add(Missile(first=start, speed = (SPEED * cos(theta), SPEED * sin(theta))))
 
+        self.boxes = [b for b in self.boxes if b.alive()]
+
         for s in self.static:
             pygame.sprite.spritecollide(s, self.missiles, True, mycollide)
 
         for b in self.boxes:
             pygame.sprite.spritecollide(b, self.missiles, True, mycollide)
 
+        screen.fill([0, 0, 0]) # blank the screen.
+        screen.blit(self.bkg, [0,0])
+
+        if random.random() < 0.005:
+            self.head = random.choice(self.heads)
+
+        screen.blit(self.head, [0,0])
+
         [m.draw(screen) for m in self.missiles]
+
+        for b in self.boxes:
+            b.render(screen)
+
+        for digit in xrange(10):
+            pygame.draw.line(screen,
+                             [255,255,255],
+                             [0,48*digit],
+                             [640,48*digit])
+
+            pygame.draw.line(screen,
+                             [255,255,255],
+                             [64*digit, 0],
+                             [64*digit, 480])
+
+
+        for row in xrange(10):
+            for col in xrange(10):
+                screen.blit(self.digits[col],
+                            [1+64*row, 1+48*col])
+                screen.blit(self.digits[row],
+                            [10+64*row, 1+48*col])
+
 
     def shoot(self, who, x, y):
         print 'shot!'
@@ -177,7 +181,7 @@ class CommandCollector(resource.Resource):
     def __init__(self, board):
         self.board = board
     def render(self, req):
-        print req
+        print req.args
         try :
             uid = req.args.get("uid")[0]
             x = int(req.args.get("x")[0])
