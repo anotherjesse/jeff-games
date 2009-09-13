@@ -1,10 +1,11 @@
 from twisted.web import server, resource
 from twisted.internet import reactor
 import pygame
+import random
 from pygame.locals import *
 
 pygame.init()
-screen = pygame.display.set_mode([640, 480])
+screen = pygame.display.set_mode([640, 480], pygame.FULLSCREEN|pygame.HWSURFACE)
 
 class Shot(pygame.sprite.Sprite):
     def __init__(self, who, x, y):
@@ -26,9 +27,14 @@ class Shot(pygame.sprite.Sprite):
 class Board():
     def __init__(self):
         self.bkg = pygame.image.load("body.png")
-        self.head = pygame.image.load("head.png")
+        self.heads = [pygame.image.load(fn) for fn in
+                      ['head1.png', 'head2.png', 'head3.png']]
+        self.head = random.choice(self.heads)
         font = pygame.font.SysFont(pygame.font.get_default_font(), 24)
-        self.digits = [font.render(str(digit), True, [255,255,255]) for digit in xrange(10)]
+        self.digits = [font.render(str(digit),
+                                   True,
+                                   [0,0,0],
+                                   [255,255,255]) for digit in xrange(10)]
 
         self.boxes = []
 
@@ -36,28 +42,36 @@ class Board():
         screen.fill([0, 0, 0]) # blank the screen.
         screen.blit(self.bkg, [0,0])
 
+        if random.random() < 0.05:
+            self.head = random.choice(self.heads)
+
+        screen.blit(self.head, [0,0])
+
         for digit in xrange(10):
             pygame.draw.line(screen,
-                             [255,255,0],
+                             [255,255,255],
                              [0,48*digit],
                              [640,48*digit])
 
             pygame.draw.line(screen,
-                             [255,255,0],
+                             [255,255,255],
                              [64*digit, 0],
                              [64*digit, 480])
+
+
         for row in xrange(10):
             for col in xrange(10):
                 screen.blit(self.digits[col],
-                            [2+64*row, 2+48*col])
+                            [1+64*row, 1+48*col])
                 screen.blit(self.digits[row],
-                            [12+64*row, 2+48*col])
+                            [10+64*row, 1+48*col])
 
 
         for b in self.boxes:
             b.render(screen)
 
         self.boxes = [b for b in self.boxes if b.alive()]
+
 
     def shoot(self, who, x, y):
         print 'shot!'
